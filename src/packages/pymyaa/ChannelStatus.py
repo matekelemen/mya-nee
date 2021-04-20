@@ -1,8 +1,12 @@
 # --- External Imports ---
 import discord
+import youtube_dl
 
 # --- Internal Imports ---
 from .Logger import Logger
+
+# --- STL Imports ---
+import asyncio
 
 
 class ChannelStatus:
@@ -25,6 +29,11 @@ class ChannelStatus:
 
     async def disconnect( self ):
         pass
+
+
+    @property
+    def channel( self ):
+        return self._channel
 
 
 
@@ -51,11 +60,13 @@ class TextChannelStatus( ChannelStatus ):
         self._log.decreaseIndent()
 
 
-    @property
-    def channel( self ):
-        return self._channel
 
-
+def requireVoiceClient( function ):
+    def wrapper( instance, *args, **kwargs ):
+        if instance._voiceClient == None:
+            raise RuntimeError( "Voice client is not set" )
+        return function( instance, *args, **kwargs )
+    return wrapper
 
 
 class VoiceChannelStatus( ChannelStatus ):
@@ -84,10 +95,21 @@ class VoiceChannelStatus( ChannelStatus ):
     
     async def connect( self ):
         if self._voiceClient == None or not self._voiceClient:
-            self._voiceClient = self._channel.connect()
+            self._voiceClient = await self._channel.connect()
 
 
     async def disconnect( self ):
         if self._voiceClient != None and self._voiceClient:
-            self._voiceClient.disconnect()
+            await self._voiceClient.disconnect()
         self._voiceClient = None
+
+
+    @requireVoiceClient
+    async def play( self, item ):
+        ytdl = youtube_dl.YoutubeDL({'outtmpl': '%(id)s.%(ext)s'})
+        with ytdl:
+            player = self._voiceClient.create_ffmpeg_player( ytdl.download([item]) )
+            player.start()
+            while not player.is_done():
+                await asyncio.sleep(1)
+            player.stop()

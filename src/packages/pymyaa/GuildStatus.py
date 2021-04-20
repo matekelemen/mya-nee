@@ -89,8 +89,11 @@ class GuildStatus:
 
         # Register commands
         self._commands = {
-            "echo"  : self.echoCommand,
-            "show"  : self.showCommand
+            "echo"          : self.echoCommand,
+            "show"          : self.showCommand,
+            "connect"       : self.connectCommand,
+            "disconnect"    : self.disconnectCommand,
+            "play"          : self.playCommand
         }
 
 
@@ -124,17 +127,21 @@ class GuildStatus:
 
 
     async def setActiveVoiceChannel( self, channel: discord.VoiceChannel ):
-        if channel.id in self.voiceChannels:
-            self._activeVoiceChannel = self.voiceChannels[channel.id]
-            try:
-                if self._activeVoiceChannel != None:
-                    await self._activeVoiceChannel.disconnect()
-                await self._activeVoiceChannel.connect()
-            except Exception as exception:
-                self._activeVoiceChannel = None
-                self._log.error( exception )
+        if channel == None and self._activeVoiceChannel != None:
+            await self._activeVoiceChannel.disconnect()
+
         else:
-            self._log.error( "Could not find voice channel: ", channel )
+            if channel.id in self.voiceChannels:
+                self._activeVoiceChannel = self.voiceChannels[channel.id]
+                try:
+                    if self._activeVoiceChannel != None:
+                        await self._activeVoiceChannel.disconnect()
+                    await self._activeVoiceChannel.connect()
+                except Exception as exception:
+                    self._activeVoiceChannel = None
+                    self._log.error( exception )
+            else:
+                self._log( "Could not find voice channel: ", channel )
 
 
     def loadConfig( self ):
@@ -168,24 +175,54 @@ class GuildStatus:
 
         self._log( "Execute command \"{}\" with arguments: ".format(command), *args )
 
-        await self._commands[command]( *args )
+        await self._commands[command]( message, *args )
 
 
     @requireTextChannel
-    async def echoCommand( self, message: str, *args ):
-        await self._activeTextChannel.channel.send( message )
+    async def echoCommand( self, message: discord.Message, *args ):
+        if 0 < len( args ):
+            msg  = args[0]
+            args = args[1:]
+            await self._activeTextChannel.channel.send( msg )
         
-        if 0 < len(args):
-            await self.echoCommand( args[0], *args[1:] )
+            if 0 < len(args):
+                await self.echoCommand( args[0], *args[1:] )
 
 
     @requireTextChannel
-    async def showCommand( self, fileName: str, *args ):
-        filePaths = IMAGE_DIR.glob( "**/{}.*".format(fileName) )
-        for filePath in filePaths:
-            if filePath.is_file():
-                with open( filePath, "rb" ) as file:
-                    await self._activeTextChannel.channel.send( file=discord.File(file) )
+    async def showCommand( self, message: discord.Message, *args ):
+        if 0 < len( args ):
+            fileName = args[0]
+            args = args[1:]
 
+            filePaths = IMAGE_DIR.glob( "**/{}.*".format(fileName) )
+            for filePath in filePaths:
+                if filePath.is_file():
+                    with open( filePath, "rb" ) as file:
+                        await self._activeTextChannel.channel.send( file=discord.File(file) )
+
+            if 0 < len(args):
+                await self.showCommand( args[0], *args[1:] )
+
+
+    async def connectCommand( self, message: discord.Message ):
+        self._log( "Connect to ", message.author.voice.channel.name )
+        try:
+            await self.setActiveVoiceChannel( message.author.voice.channel )
+        except Exception as exception:
+            self._log( exception )
+        self._log( "Connected to ", self._activeVoiceChannel.channel.name )
+
+
+    async def disconnectCommand( self, message: discord.Message ):
+        self._log( "Disconnect from ", message.author.voice.channel.name )
+        try:
+            await self.setActiveVoiceChannel( None )
+        except Exception as exception:
+            self._log( exception )
+
+
+    @requireVoiceChannel
+    async def playCommand( self, message: discord.Message, *args ):
         if 0 < len(args):
-            await self.showCommand( args[0], *args[1:] )
+            await self._activeVoiceChannel.play( args[0] )
