@@ -4,9 +4,16 @@ import discord
 # --- Internal Imports ---
 from .Logger import Logger
 from .ChannelStatus import TextChannelStatus, VoiceChannelStatus
+from .messages import *
 
 # --- STL Imports ---
-import asyncio
+import pathlib
+import json
+
+
+SOURCE_DIR  = pathlib.Path( __file__ ).absolute().parent.parent.parent.parent
+DATA_DIR    = SOURCE_DIR / "data"
+IMAGE_DIR   = DATA_DIR / "images"
 
 
 def requireTextChannel( function ):
@@ -76,8 +83,15 @@ class GuildStatus:
         self._activeTextChannel  = None
         self._activeVoiceChannel = None
 
-        # Find "general" text channel
-        #self.setActiveTextChannel( discord.utils.find(lambda item: item.name == "general", self._guild.text_channels) )
+        # Parse config file
+        self._prefix = ""
+        self.loadConfig()
+
+        # Register commands
+        self._commands = {
+            "echo"  : self.echoCommand,
+            "show"  : self.showCommand
+        }
 
 
     @property
@@ -92,11 +106,15 @@ class GuildStatus:
 
     async def setActiveTextChannel( self, channel: discord.TextChannel ):
         if channel.id in self.textChannels:
+            if self._activeTextChannel != None:
+                    await self.messageActiveTextChannel( MESSAGE_LOG_OUT )
+                    await self._activeTextChannel.disconnect()
+
             self._activeTextChannel = self.textChannels[channel.id]
             try:
-                if self._activeTextChannel != None:
-                    await self._activeTextChannel.disconnect()
                 await self._activeTextChannel.connect()
+                await self.messageActiveTextChannel( MESSAGE_LOG_ON )
+
             except Exception as exception:
                 self._activeTextChannel = None
                 self._log.error( exception )
@@ -119,6 +137,55 @@ class GuildStatus:
             self._log.error( "Could not find voice channel: ", channel )
 
 
+    def loadConfig( self ):
+        configPath = SOURCE_DIR / "config.json"
+        with open( configPath, "r" ) as file:
+            contents = json.load( file )
+            self._prefix = contents["prefix"]
+
+
     @requireTextChannel
     async def messageActiveTextChannel( self, message: str ):
+        return await self._activeTextChannel.channel.send( message )
+
+
+    async def onMessage( self, message: discord.Message ):
+        self._log( "Register message: \"{}\"".format(message.content) )
+
+        # Do nothing if the message was sen by mya-nee
+        if message.author == self._discordClient.user:
+            return
+
+        string = message.content
+
+        # Do nothing if the message wasn't intended for mya-nee
+        if not string.startswith( self._prefix ):
+            return
+
+        string  = string[len(self._prefix):].strip().split( " " )
+        command = string[0]
+        args    = string[1:]
+
+        self._log( "Execute command \"{}\" with arguments: ".format(command), *args )
+
+        await self._commands[command]( *args )
+
+
+    @requireTextChannel
+    async def echoCommand( self, message: str, *args ):
         await self._activeTextChannel.channel.send( message )
+        
+        if 0 < len(args):
+            await self.echoCommand( args[0], *args[1:] )
+
+
+    @requireTextChannel
+    async def showCommand( self, fileName: str, *args ):
+        filePaths = IMAGE_DIR.glob( "**/{}.*".format(fileName) )
+        for filePath in filePaths:
+            if filePath.is_file():
+                with open( filePath, "rb" ) as file:
+                    await self._activeTextChannel.channel.send( file=discord.File(file) )
+
+        if 0 < len(args):
+            await self.showCommand( args[0], *args[1:] )

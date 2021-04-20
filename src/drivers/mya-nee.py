@@ -30,7 +30,11 @@ globalStatus  = Myaa.GlobalStatus.GlobalStatus()
 @discordClient.event
 async def on_ready():
     await globalStatus.initialize( discordClient )
-    print( Myaa.messages.MESSAGE_LOG_ON )
+
+
+@discordClient.event
+async def on_message( message: discord.Message ):
+    await globalStatus.guilds[message.guild.id].onMessage( message )
 
 
 #@discordClient.event

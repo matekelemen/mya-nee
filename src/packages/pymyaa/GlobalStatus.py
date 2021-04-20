@@ -39,7 +39,11 @@ class GlobalStatus:
         for guildID, guildStatus in self._guilds.items():
             general = discord.utils.find( lambda channel: channel.name == "general", guild.text_channels )
             await guildStatus.setActiveTextChannel( general )
-            await guildStatus.messageActiveTextChannel( "yo" )
+
+
+    @property
+    def guilds( self ):
+        return self._guilds
 
 
     @requiresInitialized
