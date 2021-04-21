@@ -5,15 +5,10 @@ import discord
 from .Logger import Logger
 from .ChannelStatus import TextChannelStatus, VoiceChannelStatus
 from .messages import *
+from .essentials import SOURCE_DIR, DATA_DIR, IMAGE_DIR
 
 # --- STL Imports ---
-import pathlib
 import json
-
-
-SOURCE_DIR  = pathlib.Path( __file__ ).absolute().parent.parent.parent.parent
-DATA_DIR    = SOURCE_DIR / "data"
-IMAGE_DIR   = DATA_DIR / "images"
 
 
 def requireTextChannel( function ):
@@ -93,7 +88,10 @@ class GuildStatus:
             "show"          : self.showCommand,
             "connect"       : self.connectCommand,
             "disconnect"    : self.disconnectCommand,
-            "play"          : self.playCommand
+            "play"          : self.playCommand,
+            "skip"          : self.skipCommand,
+            "stop"          : self.stopCommand,
+            "list"          : self.listCommand
         }
 
 
@@ -157,11 +155,11 @@ class GuildStatus:
 
 
     async def onMessage( self, message: discord.Message ):
-        self._log( "Register message: \"{}\"".format(message.content) )
-
         # Do nothing if the message was sen by mya-nee
         if message.author == self._discordClient.user:
             return
+
+        self._log( "Register message: \"{}\" (from: {})".format(message.content, message.author) )
 
         string = message.content
 
@@ -173,9 +171,12 @@ class GuildStatus:
         command = string[0]
         args    = string[1:]
 
-        self._log( "Execute command \"{}\" with arguments: ".format(command), *args )
+        if not command:
+            await self.showCommand( message, "mya-nee" )
+        else:
+            self._log( "Execute command \"{}\" with arguments: ".format(command), *args )
 
-        await self._commands[command]( message, *args )
+            await self._commands[command]( message, *args )
 
 
     @requireTextChannel
@@ -224,5 +225,42 @@ class GuildStatus:
 
     @requireVoiceChannel
     async def playCommand( self, message: discord.Message, *args ):
-        if 0 < len(args):
-            await self._activeVoiceChannel.play( args[0] )
+        for arg in args:
+            self._activeVoiceChannel.enqueue( arg )
+
+
+    @requireVoiceChannel
+    async def skipCommand( self, message: discord.Message, *args ):
+        self._activeVoiceChannel.skip( *args )
+
+
+    @requireVoiceChannel
+    async def stopCommand( self, message: discord.Message, *args ):
+        self._activeVoiceChannel.stop( *args )
+
+
+    @requireTextChannel
+    async def listCommand( self, message: discord.Message, *args ):
+        for arg in args:
+            if arg == "commands":
+                output = ""
+                for index, command in enumerate(self._commands.keys()):
+                    output += command + "\n"
+                await self.messageActiveTextChannel( output )
+
+            elif arg == "queue":
+                if not self._activeVoiceChannel._playList:
+                    await self.messageActiveTextChannel( "[empty]" )
+                else:
+                    output = ""
+                    for index, item in enumerate(self._activeVoiceChannel._playList[::-1]):
+                        output += "{}) {}\n".format( index, item )    
+                    await self.messageActiveTextChannel( output )
+
+            else:
+                path = DATA_DIR / arg
+                if path.is_dir():
+                    output = ""
+                    for index, filePath in enumerate(path.glob( "**/*" )):
+                        output += "{}) {}\n".format( index, filePath.stem )
+                    await self.messageActiveTextChannel( output )
