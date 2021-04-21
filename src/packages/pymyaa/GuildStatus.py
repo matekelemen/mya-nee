@@ -9,6 +9,7 @@ from .essentials import SOURCE_DIR, DATA_DIR, IMAGE_DIR
 
 # --- STL Imports ---
 import json
+import random
 
 
 def requireTextChannel( function ):
@@ -91,6 +92,7 @@ class GuildStatus:
             "play"          : self.playCommand,
             "skip"          : self.skipCommand,
             "stop"          : self.stopCommand,
+            "loop"          : self.loopCommand,
             "list"          : self.listCommand
         }
 
@@ -192,17 +194,19 @@ class GuildStatus:
 
     @requireTextChannel
     async def showCommand( self, message: discord.Message, *args ):
-        if 0 < len( args ):
+        if args:
             fileName = args[0]
             args = args[1:]
 
-            filePaths = IMAGE_DIR.glob( "**/{}.*".format(fileName) )
-            for filePath in filePaths:
-                if filePath.is_file():
-                    with open( filePath, "rb" ) as file:
-                        await self._activeTextChannel.channel.send( file=discord.File(file) )
+            filePaths = [ filePath for filePath in IMAGE_DIR.glob( "**/*{}*".format(fileName) ) if filePath.is_file() ]
 
-            if 0 < len(args):
+            if filePaths:
+                filePath = filePaths[random.randint(0, len(filePaths)-1)]
+
+                with open( filePath, "rb" ) as file:
+                    await self._activeTextChannel.channel.send( file=discord.File(file) )
+
+            if args:
                 await self.showCommand( args[0], *args[1:] )
 
 
@@ -237,6 +241,22 @@ class GuildStatus:
     @requireVoiceChannel
     async def stopCommand( self, message: discord.Message, *args ):
         self._activeVoiceChannel.stop( *args )
+
+
+    @requireVoiceChannel
+    async def loopCommand( self, message: discord.Message, *args ):
+        if args:
+            arg = args[0]
+            offSwitches = ["0", "false", "False", "off"]
+            if not (arg in offSwitches):
+                self._activeVoiceChannel.enableLooping()
+            else:
+                self._activeVoiceChannel.disableLooping()
+
+        if self._activeVoiceChannel.isLooping():
+            await self.messageActiveTextChannel( "Looping enabled" )
+        else:
+            await self.messageActiveTextChannel( "Looping disabled" )
 
 
     @requireTextChannel

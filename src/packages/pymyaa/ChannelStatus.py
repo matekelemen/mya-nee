@@ -96,6 +96,7 @@ class VoiceChannelStatus( ChannelStatus ):
 
         self._voiceClient = None
         self._playList    = []
+        self._isLooping   = False
 
     
     async def connect( self ):
@@ -109,10 +110,26 @@ class VoiceChannelStatus( ChannelStatus ):
         self._voiceClient = None
 
 
+    def isLooping( self ):
+        return self._isLooping
+
+
+    def enableLooping( self ):
+        self._isLooping = True
+
+
+    def disableLooping( self ):
+        self._isLooping = False
+
+
     @requireVoiceClient
     def recursePlayList( self ):
         if self._playList:
-            item = self._playList.pop(0)
+            item = self._playList.pop( 0 )
+            
+            if self._isLooping:
+                self._playList.append( item )
+
             self.play( item )
 
 
