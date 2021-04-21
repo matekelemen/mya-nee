@@ -37,11 +37,6 @@ async def on_message( message: discord.Message ):
     await globalStatus.guilds[message.guild.id].onMessage( message )
 
 
-#@discordClient.event
-#async def on_message( message ):
-#
-#
-
 # ------------------------------------------------
 # RUN DISCORD CLIENT
 # ------------------------------------------------

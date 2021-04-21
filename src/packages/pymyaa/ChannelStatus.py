@@ -140,6 +140,7 @@ class VoiceChannelStatus( ChannelStatus ):
             self.recursePlayList()
         else:
             self._playList.append( item )
+            self.play( item, prepareOnly=True )
 
 
     @requireVoiceClient
@@ -154,7 +155,7 @@ class VoiceChannelStatus( ChannelStatus ):
 
 
     @requireVoiceClient
-    def play( self, item: str ):
+    def play( self, item: str, prepareOnly=False ):
         ## Wait until available
         #while self._voiceClient.is_playing():
         #    asyncio.sleep( 0.1 )
@@ -188,6 +189,7 @@ class VoiceChannelStatus( ChannelStatus ):
             if 0 < len( matches ):
                 filePath = pathlib.Path( matches[random.randint(0,len(matches)-1)] )
 
-        if filePath.is_file():
-            self._log( "Now playing ", filePath )
-            self._voiceClient.play( discord.FFmpegPCMAudio( source=str(filePath) ), after=lambda x: self.recursePlayList() )
+        if not prepareOnly:
+            if filePath.is_file():
+                self._log( "Now playing ", filePath )
+                self._voiceClient.play( discord.FFmpegPCMAudio( source=str(filePath) ), after=lambda x: self.recursePlayList() )

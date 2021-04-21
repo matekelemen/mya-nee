@@ -24,7 +24,7 @@ def getDownloadFilePathFromTitle( title: str,
                                   extension=".mp3" ):
     # ASCIIfy title
     fileName = "".join( [char if ord(char) < 128 else "_" for char in title] ) + extension
-    fileName = fileName.replace( " ", "_" )
+    fileName = fileName.replace( " ", "_" ).replace( "/", "_" )
 
     return DOWNLOAD_DIR / fileName
 
