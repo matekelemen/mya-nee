@@ -291,5 +291,5 @@ class GuildStatus:
                     await self.messageActiveTextChannel( output )
 
 
-    def rebootCommand( self, message: discord.Message, *args ):
+    async def rebootCommand( self, message: discord.Message, *args ):
         self._discordClient.close()
