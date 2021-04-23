@@ -1,6 +1,7 @@
 # --- STL Imports ---
 import pathlib
 from urllib.parse import urlparse
+import multiprocessing
 
 
 SOURCE_DIR      = pathlib.Path( __file__ ).absolute().parent.parent.parent.parent
@@ -14,7 +15,8 @@ YOUTUBE_DL_OPTIONS = {
     "postprocessors" : [{
         "key" : "FFmpegExtractAudio",
         "preferredcodec" : "mp3",
-        "preferredquality" : "192"
+        "preferredquality" : "192",
+        "threads" : str( multiprocessing.cpu_count() )
     }],
     "outtmpl" : str(DOWNLOAD_DIR / r"%(id)s.%(ext)s")
 }
