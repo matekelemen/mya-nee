@@ -3,10 +3,10 @@ import discord
 
 # --- STL Imports ---
 import importlib.util
+import asyncio
 import pathlib
 import json
 import sys
-import asyncio
 
 # --- Internal Imports ---
 driverPath  = pathlib.Path(__file__).absolute() # full path to this file
@@ -56,5 +56,4 @@ while True:
     # Run mya-nee
     discordClient.run( token )
     
-    importlib.reload( asyncio )
-    importlib.reload( discord )
+    asyncio.get_event_loop.close()
