@@ -134,13 +134,12 @@ class VoiceChannelStatus( ChannelStatus ):
 
 
     @requireVoiceClient
-    def enqueue( self, item: str ):
+    def enqueue( self, filePath: pathlib.Path ):
         if not self._playList and not self._voiceClient.is_playing():
-            self._playList.append( item )
+            self._playList.append( filePath )
             self.recursePlayList()
         else:
-            self._playList.append( item )
-            self.play( item, prepareOnly=True )
+            self._playList.append( filePath )
 
 
     @requireVoiceClient
@@ -155,41 +154,9 @@ class VoiceChannelStatus( ChannelStatus ):
 
 
     @requireVoiceClient
-    def play( self, item: str, prepareOnly=False ):
-        ## Wait until available
-        #while self._voiceClient.is_playing():
-        #    asyncio.sleep( 0.1 )
-
-        filePath = pathlib.Path("")
-
-        if isURL( item ): # Request is a link (assuming from youtube)
-            options  = YOUTUBE_DL_OPTIONS.copy()
-
-            # Get file name
-            with youtube_dl.YoutubeDL( options ) as ytdl:
-                title = ytdl.extract_info( item, download=False )["title"]
-                self._log( "Request video: ", title )
-                filePath = getDownloadFilePathFromTitle( title, extension=".mp3" )
-
-            if filePath.is_file(): # file has already been downloaded before
-                self._log( str(filePath), " already exists, no need to download" )
-
-            else: # file was not downloaded yet, get it now
-                self._log( "Downloading to ", filePath )
-                options["outtmpl"] = str( filePath.with_suffix( r".%(ext)s" ) )
-
-                with youtube_dl.YoutubeDL( options ) as ytdl:
-                    ytdl.extract_info( item, download=True )
-                
-                self._log( "Finished downloading to ", filePath )
-
-        else: # Request is not a link
-            globString = "**/*{}*".format(item)
-            matches = list(AUDIO_DIR.glob(globString)) + list(DOWNLOAD_DIR.glob(globString))
-            if 0 < len( matches ):
-                filePath = pathlib.Path( matches[random.randint(0,len(matches)-1)] )
-
-        if not prepareOnly:
-            if filePath.is_file():
-                self._log( "Now playing ", filePath )
-                self._voiceClient.play( discord.FFmpegPCMAudio( source=str(filePath) ), after=lambda x: self.recursePlayList() )
+    def play( self, filePath: pathlib.Path ):
+        if filePath.is_file():
+            self._log( "Now playing ", filePath )
+            self._voiceClient.play( discord.FFmpegPCMAudio( source=str(filePath) ), after=lambda x: self.recursePlayList() )
+        else:
+            self._log.error( filePath, " not found" )

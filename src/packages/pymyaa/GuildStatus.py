@@ -4,6 +4,7 @@ import discord
 # --- Internal Imports ---
 from .Logger import Logger
 from .ChannelStatus import TextChannelStatus, VoiceChannelStatus
+from .DownloadQueue import DownloadQueue
 from .messages import *
 from .essentials import SOURCE_DIR, DATA_DIR, IMAGE_DIR
 
@@ -78,6 +79,7 @@ class GuildStatus:
 
         self._activeTextChannel  = None
         self._activeVoiceChannel = None
+        self._downloadQueue      = DownloadQueue( self._log )
 
         # Parse config file
         self._prefix = ""
@@ -230,7 +232,8 @@ class GuildStatus:
     @requireVoiceChannel
     async def playCommand( self, message: discord.Message, *args ):
         for arg in args:
-            self._activeVoiceChannel.enqueue( arg )
+            filePath = self._downloadQueue.getAudioFile( arg )
+            self._activeVoiceChannel.enqueue( filePath )
 
 
     @requireVoiceChannel
