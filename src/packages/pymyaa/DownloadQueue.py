@@ -41,7 +41,8 @@ class DownloadQueue:
 
         if isURL( item ): # request is an URL (assume youtube)
             filePath = pathlib.Path( self.getFilePathFromURL(item) )
-            self.enqueue( item )
+            if not filePath.is_file():
+                self.enqueue( item )
 
         else: # check if request is a local file
             globString = "**/*{}*".format(item)
