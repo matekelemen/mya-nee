@@ -54,3 +54,5 @@ while True:
 
     # Run mya-nee
     discordClient.run( token )
+    
+    importlib.reload( discord )
