@@ -63,7 +63,7 @@ class DownloadQueue:
         if not self.isInQueue( url ):
             self._queue.append( url )
 
-        if not (self._current == ""):
+        if self._current == "":
             self.recurse()
 
 
