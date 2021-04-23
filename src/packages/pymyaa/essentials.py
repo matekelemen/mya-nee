@@ -12,25 +12,8 @@ DOWNLOAD_DIR    = DATA_DIR / "downloads"
 
 YOUTUBE_DL_OPTIONS = {
     "format" : "bestaudio/best",
-    "postprocessors" : [{
-        "key" : "FFmpegExtractAudio",
-        "preferredcodec" : "mp3",
-        "preferredquality" : "192"
-    }],
-    "postprocessor-args" : [{
-        "threads" : str( max( 1, multiprocessing.cpu_count()-1 ) )
-    }],
     "outtmpl" : str(DOWNLOAD_DIR / r"%(id)s.%(ext)s")
 }
-
-
-def getDownloadFilePathFromTitle( title: str,
-                                  extension=".mp3" ):
-    # ASCIIfy title
-    fileName = "".join( [char if ord(char) < 128 else "_" for char in title] ) + extension
-    fileName = fileName.replace( " ", "_" ).replace( "/", "_" )
-
-    return DOWNLOAD_DIR / fileName
 
 
 def isURL( string: str ):

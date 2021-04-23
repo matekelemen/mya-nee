@@ -59,4 +59,4 @@ class Logger:
 
     def error( self, *args ):
         self.log( *args )
-        raise RuntimeError( "" )
+        raise RuntimeError( *args )

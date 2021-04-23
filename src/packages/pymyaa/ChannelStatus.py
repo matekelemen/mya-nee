@@ -4,7 +4,6 @@ import youtube_dl
 
 # --- Internal Imports ---
 from .Logger import Logger
-from .essentials import YOUTUBE_DL_OPTIONS, DOWNLOAD_DIR, AUDIO_DIR, getDownloadFilePathFromTitle, isURL
 
 # --- STL Imports ---
 import shutil

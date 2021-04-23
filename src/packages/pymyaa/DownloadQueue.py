@@ -21,19 +21,21 @@ class DownloadQueue:
         self._log     = logger
 
 
-    def getFilePathFromTitle( self, title: str, extension=".mp3" ):
+    def getFilePathFromTitle( self, title: str, extension: str ):
         # ASCIIfy title
-        fileName = "".join( [char if ord(char) < 128 else "_" for char in title] ) + extension
-        fileName = fileName.replace( " ", "_" ).replace( "/", "_" )
+        fileName = "".join( [char if ord(char) < 128 else "_" for char in title] )
+        fileName = fileName.replace( " ", "_" ).replace( "/", "_" ).replace( ".", "_" )
 
-        return DOWNLOAD_DIR / fileName
+        return DOWNLOAD_DIR / (fileName + extension)
 
 
     def getFilePathFromURL( self, url: str ):
+        options = YOUTUBE_DL_OPTIONS
+        options["progress_hooks"] = [self.progressHook]
+
         with youtube_dl.YoutubeDL( YOUTUBE_DL_OPTIONS ) as ytdl:
-            title = ytdl.extract_info( url, download=False )["title"]
-            self._log( "Request audio from ", title )
-            return self.getFilePathFromTitle( title )
+            info = ytdl.extract_info( url, download=False )
+            return self.getFilePathFromTitle( info["title"], "." + info["ext"] )
 
 
     def getAudioFile( self, item: str ):
@@ -89,3 +91,11 @@ class DownloadQueue:
         
 
         self._current = ""
+
+
+    def progressHook( self, info: dict ):
+        if info["status"] == "finished":
+            self._log( "Finished downloading to ", info["filename"] )
+
+        elif info["status"] == "error":
+            self._log.error( "Error downloading to ", info["filename"] )
