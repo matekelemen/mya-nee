@@ -56,4 +56,4 @@ while True:
     # Run mya-nee
     discordClient.run( token )
     
-    asyncio.get_event_loop.close()
+    asyncio.get_event_loop().close()
