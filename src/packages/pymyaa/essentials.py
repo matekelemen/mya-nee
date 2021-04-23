@@ -18,7 +18,7 @@ YOUTUBE_DL_OPTIONS = {
         "preferredquality" : "192"
     }],
     "postprocessor-args" : [{
-        "threads" : str( multiprocessing.cpu_count() )
+        "threads" : str( max( 1, multiprocessing.cpu_count()-1 ) )
     }],
     "outtmpl" : str(DOWNLOAD_DIR / r"%(id)s.%(ext)s")
 }
