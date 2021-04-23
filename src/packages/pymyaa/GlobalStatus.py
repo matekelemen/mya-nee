@@ -5,6 +5,7 @@ import discord
 from .ChannelStatus import TextChannelStatus, VoiceChannelStatus
 from .GuildStatus import GuildStatus
 from .Logger import Logger
+from .Status import Status
 
 
 def requiresInitialized( function ):
@@ -23,6 +24,7 @@ class GlobalStatus:
         self._guilds        = {}
         self._log           = None
         self._activeGuild   = None
+        self._status        = Status("")
 
 
     async def initialize( self, discordClient: discord.Client ):
@@ -40,6 +42,13 @@ class GlobalStatus:
             general = discord.utils.find( lambda channel: channel.name == "general", guild.text_channels )
             await guildStatus.setActiveTextChannel( general )
 
+        self._status.set( "running" )
+
+
+    @property
+    def status( self ):
+        return self._status()
+
 
     @property
     def guilds( self ):
@@ -48,7 +57,7 @@ class GlobalStatus:
 
     @requiresInitialized
     def registerGuild( self, guild ):
-        self._guilds[guild.id] = GuildStatus( self._discordClient, guild, self._log )
+        self._guilds[guild.id] = GuildStatus( self._discordClient, guild, self._log, self._status )
 
 
     @requiresInitialized

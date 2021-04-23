@@ -56,4 +56,7 @@ while True:
     # Run mya-nee
     discordClient.run( token )
     
-    asyncio.set_event_loop( asyncio.new_event_loop() )
+    if globalStatus.status == "rebooting":
+        asyncio.set_event_loop( asyncio.new_event_loop() )
+    else:
+        break

@@ -7,6 +7,7 @@ from .ChannelStatus import TextChannelStatus, VoiceChannelStatus
 from .DownloadQueue import DownloadQueue
 from .messages import *
 from .essentials import SOURCE_DIR, DATA_DIR, IMAGE_DIR
+from .Status import Status
 
 # --- STL Imports ---
 import json
@@ -35,10 +36,12 @@ class GuildStatus:
     def __init__( self,
                   discordClient: discord.Client,
                   guild: discord.Guild,
-                  logger: Logger ):
+                  logger: Logger,
+                  globalStatus: Status ):
         self._discordClient = discordClient
         self._guild         = guild
         self._log           = logger
+        self._globalStatus  = globalStatus
 
         self._log.separate()
         self._log( "Initialize server: \"{}\" (ID {})".format( guild.name, guild.id ) )
@@ -292,4 +295,5 @@ class GuildStatus:
 
 
     async def rebootCommand( self, message: discord.Message, *args ):
+        self._globalStatus.set( "rebooting" )
         await self._discordClient.close()
