@@ -83,7 +83,7 @@ class DownloadQueue:
 
         self._log( "Downloading from ", url, " to ", filePath )
         with youtube_dl.YoutubeDL( options ) as ytdl:
-            ytdl.download( url )
+            ytdl.extract_info( url, download=True )
         self._log( "Finished downloading from ", url, " to ", filePath )
         
 
