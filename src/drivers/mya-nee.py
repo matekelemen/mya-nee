@@ -20,34 +20,37 @@ sys.modules[moduleSpec.name] = Myaa
 moduleSpec.loader.exec_module( Myaa )
 
 
-# ------------------------------------------------
-# DISCORD CLIENT SETUP
-# ------------------------------------------------
+while True:
 
-discordClient = discord.Client()
-globalStatus  = Myaa.GlobalStatus.GlobalStatus()
-
-@discordClient.event
-async def on_ready():
-    await globalStatus.initialize( discordClient )
+    # ------------------------------------------------
+    # DISCORD CLIENT SETUP
+    # ------------------------------------------------
 
 
-@discordClient.event
-async def on_message( message: discord.Message ):
-    await globalStatus.guilds[message.guild.id].onMessage( message )
+    discordClient = discord.Client()
+    globalStatus  = Myaa.GlobalStatus.GlobalStatus()
+
+    @discordClient.event
+    async def on_ready():
+        await globalStatus.initialize( discordClient )
 
 
-# ------------------------------------------------
-# RUN DISCORD CLIENT
-# ------------------------------------------------
+    @discordClient.event
+    async def on_message( message: discord.Message ):
+        await globalStatus.guilds[message.guild.id].onMessage( message )
 
-# Get bot token
-configuration = {}
 
-with open( rootPath / "config.json", "r" ) as configFile:
-    configuration = json.load( configFile )
+    # ------------------------------------------------
+    # RUN DISCORD CLIENT
+    # ------------------------------------------------
 
-token         = configuration["token"]
+    # Get bot token
+    configuration = {}
 
-# Run mya-nee
-discordClient.run( token )
+    with open( rootPath / "config.json", "r" ) as configFile:
+        configuration = json.load( configFile )
+
+    token         = configuration["token"]
+
+    # Run mya-nee
+    discordClient.run( token )

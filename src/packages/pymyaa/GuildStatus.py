@@ -11,6 +11,7 @@ from .essentials import SOURCE_DIR, DATA_DIR, IMAGE_DIR
 # --- STL Imports ---
 import json
 import random
+import sys
 
 
 def requireTextChannel( function ):
@@ -95,7 +96,8 @@ class GuildStatus:
             "skip"          : self.skipCommand,
             "stop"          : self.stopCommand,
             "loop"          : self.loopCommand,
-            "list"          : self.listCommand
+            "list"          : self.listCommand,
+            "reboot"        : self.rebootCommand
         }
 
 
@@ -287,3 +289,7 @@ class GuildStatus:
                     for index, filePath in enumerate(path.glob( "**/*" )):
                         output += "{}) {}\n".format( index, filePath.stem )
                     await self.messageActiveTextChannel( output )
+
+
+    def rebootCommand( self, message: discord.Message, *args ):
+        self._discordClient.close()
