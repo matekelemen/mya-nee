@@ -129,7 +129,7 @@ class GuildStatus:
 
 
     async def setActiveVoiceChannel( self, channel: discord.VoiceChannel ):
-        if channel == None and self._activeVoiceChannel != None:
+        if channel == None and self._activeVoiceChannel != None and self._activeVoiceChannel:
             await self._activeVoiceChannel.disconnect()
 
         else:
