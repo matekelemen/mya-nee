@@ -15,7 +15,9 @@ YOUTUBE_DL_OPTIONS = {
     "postprocessors" : [{
         "key" : "FFmpegExtractAudio",
         "preferredcodec" : "mp3",
-        "preferredquality" : "192",
+        "preferredquality" : "192"
+    }],
+    "postprocessor-args" : [{
         "threads" : str( multiprocessing.cpu_count() )
     }],
     "outtmpl" : str(DOWNLOAD_DIR / r"%(id)s.%(ext)s")
