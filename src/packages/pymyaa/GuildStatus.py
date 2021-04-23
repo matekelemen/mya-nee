@@ -292,4 +292,4 @@ class GuildStatus:
 
 
     async def rebootCommand( self, message: discord.Message, *args ):
-        self._discordClient.close()
+        await self._discordClient.close()
