@@ -39,7 +39,7 @@ class GlobalStatus:
 
         # Set active text channel on every guild to "general"
         for guildID, guildStatus in self._guilds.items():
-            general = discord.utils.find( lambda channel: channel.name == "general", guild.text_channels )
+            general = discord.utils.find( lambda channel: channel.name == "general", guildStatus._guild.text_channels )
             await guildStatus.setActiveTextChannel( general )
 
         self._status.set( "running" )
