@@ -92,16 +92,16 @@ class GuildStatus:
 
         # Register commands
         self._commands = {
-            "echo"          : self.echoCommand,
-            "show"          : self.showCommand,
-            "connect"       : self.connectCommand,
-            "disconnect"    : self.disconnectCommand,
-            "play"          : self.playCommand,
-            "skip"          : self.skipCommand,
-            "stop"          : self.stopCommand,
-            "radio"         : self.radioCommand,
-            "list"          : self.listCommand,
-            "reboot"        : self.rebootCommand
+            "echo"          : (self.echoCommand, "string", "message the active text channel"),
+            "show"          : (self.showCommand, "regex-in-images-dir", "post an image/gif from the images directory"),
+            "connect"       : (self.connectCommand, "", "connect to the user's voice channel"),
+            "disconnect"    : (self.disconnectCommand, "", "disconnect from the active voice channel"),
+            "play"          : (self.playCommand, "youtube-link / regex-in-downloads-dir", "play an audio file from youtube or the downloads directory"),
+            "skip"          : (self.skipCommand, "", "stop playing the current audio file"),
+            "stop"          : (self.stopCommand, "", "stop playing audio"),
+            "radio"         : (self.radioCommand, "", "play random audio files from the downloads directory until stopped"),
+            "list"          : (self.listCommand, "commands / queue / regex-in-data-dir", "list commands / audio playlist / contents of a data directory"),
+            "reboot"        : (self.rebootCommand, "", "reset state and reconnect to discord")
         }
 
 
@@ -186,7 +186,7 @@ class GuildStatus:
         else:
             self._log( "Execute command \"{}\" with arguments: ".format(command), *args )
 
-            await self._commands[command]( message, *args )
+            await self._commands[command][0]( message, *args )
 
 
     @requireTextChannel
@@ -264,12 +264,18 @@ class GuildStatus:
             output = ""
 
             if arg == "commands":
-                for batch in chunks(self._commands.keys()):
+                index = 0
+                for keyBatch, valueBatch in zip(chunks(self._commands.keys()), chunks(self._commands.values())):
                     output = ""
-                    for item in batch:
-                        output += command + "\n"
+                    for key, value in zip(keyBatch, valueBatch):
+                        output += "{index}) {command} [{arguments}]: {description}\n".format(
+                            index = index,
+                            command = key,
+                            arguments = value[1],
+                            description = value[2]
+                        )
                         index += 1
-                        await self.messageActiveTextChannel( output )
+                    await self.messageActiveTextChannel( output )
 
             elif arg == "queue":
                 if not self._activeVoiceChannel._playList:
@@ -288,7 +294,7 @@ class GuildStatus:
                     await self.showCommand(None, "hackerman")
                 else:
                     if path.is_dir():
-                        for batch in chunks(sorted(list(path.glob( "*.*" )))):
+                        for batch in chunks(sorted(list(path.glob( "*" )))):
                             output = ""
                             for filePath in batch:
                                 output += "{}) {}\n".format( index, filePath.stem )
