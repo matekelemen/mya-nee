@@ -275,7 +275,8 @@ class GuildStatus:
                             description = value[2]
                         )
                         index += 1
-                    await self.messageActiveTextChannel( output )
+                    if output:
+                        await self.messageActiveTextChannel( output )
 
             elif arg == "queue":
                 if not self._activeVoiceChannel._playList:
@@ -286,7 +287,8 @@ class GuildStatus:
                         for item in batch:
                             output += "{}) {}\n".format( index, pathlib.Path(item).stem )
                             index += 1
-                        await self.messageActiveTextChannel( output )
+                        if output:
+                            await self.messageActiveTextChannel( output )
 
             else:
                 path = DATA_DIR / arg
@@ -299,7 +301,8 @@ class GuildStatus:
                             for filePath in batch:
                                 output += "{}) {}\n".format( index, filePath.stem )
                                 index += 1
-                            await self.messageActiveTextChannel( output )
+                            if output:
+                                await self.messageActiveTextChannel( output )
 
 
     async def rebootCommand( self, message: discord.Message, *args ):
