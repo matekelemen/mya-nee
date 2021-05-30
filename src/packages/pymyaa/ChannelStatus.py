@@ -4,6 +4,7 @@ import youtube_dl
 
 # --- Internal Imports ---
 from .Logger import Logger
+from .essentials import DOWNLOAD_DIR
 
 # --- STL Imports ---
 import shutil
@@ -93,9 +94,10 @@ class VoiceChannelStatus( ChannelStatus ):
 
         self._log.decreaseIndent()
 
-        self._voiceClient = None
-        self._playList    = []
-        self._isLooping   = False
+        self._voiceClient      = None
+        self._playList         = []
+        self._inRadioMode      = False
+        self._currentlyPlaying = None
 
     
     async def connect( self ):
@@ -109,27 +111,35 @@ class VoiceChannelStatus( ChannelStatus ):
         self._voiceClient = None
 
 
-    def isLooping( self ):
-        return self._isLooping
+    def inRadioMode( self ):
+        return self._inRadioMode
 
 
-    def enableLooping( self ):
-        self._isLooping = True
+    def enableRadioMode( self ):
+        self._playList = []
+        self._inRadioMode = True
+        self.recursePlayList()
 
 
-    def disableLooping( self ):
-        self._isLooping = False
+    def disableRadioMode( self ):
+        self._inRadioMode = False
 
 
     @requireVoiceClient
     def recursePlayList( self ):
-        if self._playList:
-            item = self._playList.pop( 0 )
-            
-            if self._isLooping:
-                self._playList.append( item )
+        itemToPlay = None
 
-            self.play( item )
+        if self._inRadioMode: # Grab a random downloaded audio file and play it
+            files = [ file for file in DOWNLOAD_DIR.glob("./*") if file.is_file() ]
+            itemToPlay = files[random.randint( 0, len(files)-1 )]
+        
+        elif self._playList: # Pop the next item from the playlist and play it
+            itemToPlay = self._playList.pop( 0 )
+
+        self._currentlyPlaying = itemToPlay
+
+        if itemToPlay != None:
+            self.play( itemToPlay )
 
 
     @requireVoiceClient
@@ -149,6 +159,7 @@ class VoiceChannelStatus( ChannelStatus ):
     @requireVoiceClient
     def stop( self, *args ):
         self._playList = []
+        self._inRadioMode = False
         self._voiceClient.stop()
 
 

@@ -24,7 +24,7 @@ class DownloadQueue:
     def getFilePathFromTitle( self, title: str, extension: str ):
         # ASCIIfy title
         fileName = "".join( [char if ord(char) < 128 else "_" for char in title] )
-        fileName = fileName.replace( " ", "_" ).replace( "/", "_" ).replace( ".", "_" )
+        fileName = fileName.replace( " ", "_" ).replace( "/", "_" ).replace( ".", "_" .lower())
 
         return DOWNLOAD_DIR / (fileName + extension)
 
@@ -47,13 +47,17 @@ class DownloadQueue:
                 self.enqueue( item )
 
         else: # check if request is a local file
-            globString = "**/*{}*".format(item)
-            matches = list(AUDIO_DIR.glob(globString)) + list(DOWNLOAD_DIR.glob(globString))
-            
-            if matches: # request matches a local file
-                filePath = pathlib.Path( matches[random.randint(0,len(matches)-1)] )
-            else: # request is not an URL and does not match any local file
-                self._log.error( "No local audio files match \"{}\"".format(item) )
+            if item == "#": # select random file
+                files = [ file for file in DOWNLOAD_DIR.glob("./*") if file.is_file() ]
+                filePath = files[random.randint( 0, len(files)-1 )]
+            else:
+                globString = "**/*{}*".format(item)
+                matches = list(AUDIO_DIR.glob(globString)) + list(DOWNLOAD_DIR.glob(globString))
+
+                if matches: # request matches a local file
+                    filePath = pathlib.Path( matches[random.randint(0,len(matches)-1)] )
+                else: # request is not an URL and does not match any local file
+                    self._log.error( "No local audio files match \"{}\"".format(item) )
 
         return filePath
 

@@ -6,13 +6,14 @@ from .Logger import Logger
 from .ChannelStatus import TextChannelStatus, VoiceChannelStatus
 from .DownloadQueue import DownloadQueue
 from .messages import *
-from .essentials import SOURCE_DIR, DATA_DIR, IMAGE_DIR
+from .essentials import SOURCE_DIR, DATA_DIR, IMAGE_DIR, chunks
 from .Status import Status
 
 # --- STL Imports ---
 import json
 import random
 import sys
+import pathlib
 
 
 def requireTextChannel( function ):
@@ -98,7 +99,7 @@ class GuildStatus:
             "play"          : self.playCommand,
             "skip"          : self.skipCommand,
             "stop"          : self.stopCommand,
-            "loop"          : self.loopCommand,
+            "radio"         : self.radioCommand,
             "list"          : self.listCommand,
             "reboot"        : self.rebootCommand
         }
@@ -252,46 +253,47 @@ class GuildStatus:
 
 
     @requireVoiceChannel
-    async def loopCommand( self, message: discord.Message, *args ):
-        if args:
-            arg = args[0]
-            offSwitches = ["0", "false", "False", "off"]
-            if not (arg in offSwitches):
-                self._activeVoiceChannel.enableLooping()
-            else:
-                self._activeVoiceChannel.disableLooping()
-
-        if self._activeVoiceChannel.isLooping():
-            await self.messageActiveTextChannel( "Looping enabled" )
-        else:
-            await self.messageActiveTextChannel( "Looping disabled" )
+    async def radioCommand( self, message: discord.Message, *args ):
+        self._activeVoiceChannel.enableRadioMode()
 
 
     @requireTextChannel
     async def listCommand( self, message: discord.Message, *args ):
         for arg in args:
+            index = 0
+            output = ""
+
             if arg == "commands":
-                output = ""
-                for index, command in enumerate(self._commands.keys()):
-                    output += command + "\n"
-                await self.messageActiveTextChannel( output )
+                for batch in chunks(self._commands.keys()):
+                    output = ""
+                    for item in batch:
+                        output += command + "\n"
+                        index += 1
+                        await self.messageActiveTextChannel( output )
 
             elif arg == "queue":
                 if not self._activeVoiceChannel._playList:
                     await self.messageActiveTextChannel( "[empty]" )
                 else:
-                    output = ""
-                    for index, item in enumerate(self._activeVoiceChannel._playList[::-1]):
-                        output += "{}) {}\n".format( index, item )    
-                    await self.messageActiveTextChannel( output )
+                    for batch in chunks(self._activeVoiceChannel._playList):
+                        output = ""
+                        for item in batch:
+                            output += "{}) {}\n".format( index, pathlib.Path(item).stem )
+                            index += 1
+                        await self.messageActiveTextChannel( output )
 
             else:
                 path = DATA_DIR / arg
-                if path.is_dir():
-                    output = ""
-                    for index, filePath in enumerate(path.glob( "**/*" )):
-                        output += "{}) {}\n".format( index, filePath.stem )
-                    await self.messageActiveTextChannel( output )
+                if not (SOURCE_DIR in path.parents):
+                    await self.showCommand(None, "hackerman")
+                else:
+                    if path.is_dir():
+                        for batch in chunks(sorted(list(path.glob( "*.*" )))):
+                            output = ""
+                            for filePath in batch:
+                                output += "{}) {}\n".format( index, filePath.stem )
+                                index += 1
+                            await self.messageActiveTextChannel( output )
 
 
     async def rebootCommand( self, message: discord.Message, *args ):

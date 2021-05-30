@@ -12,7 +12,7 @@ DOWNLOAD_DIR    = DATA_DIR / "downloads"
 
 YOUTUBE_DL_OPTIONS = {
     "format" : "bestaudio/best",
-    "outtmpl" : str(DOWNLOAD_DIR / r"%(id)s.%(ext)s")
+    "outtmpl" : str(DOWNLOAD_DIR / str(r"%(id)s.%(ext)s").lower())
 }
 
 
@@ -22,3 +22,8 @@ def isURL( string: str ):
         return all( [parseResult.scheme, parseResult.netloc, parseResult.path] )
     except:
         return False
+
+
+def chunks( items: list, chunkSize=10 ):
+    local = list(items)
+    return [ local[chunkID*chunkSize:(chunkID+1)*chunkSize] for chunkID in range(len(local)//chunkSize + 1) ]
