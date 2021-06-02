@@ -67,6 +67,7 @@ class Guild(Loggee):
             "disconnect"    : self.disconnectCommand,
             "play"          : self.playCommand,
             "skip"          : self.skipCommand,
+            "next"          : self.nextCommand,
             "stop"          : self.stopCommand,
             "radio"         : self.radioCommand,
             "list"          : self.listCommand,
@@ -186,14 +187,18 @@ class Guild(Loggee):
 
     @requireActiveVoiceChannel
     async def skipCommand( self, message: discord.Message, *args ):
-        """Stop playing the current audio file and queue the next one, if any"""
+        """Stop playing the current audio file and queue the next one (if any)"""
         # Prevent the currently playing track from getting updated
-        if "timeout" in args:
-            self._currentTrack._playCount -= 1 # dirty
-        else:
-            self._currentTrack = None
+        self._currentTrack = None
 
         # Stop playing current track
+        self._activeVoiceChannel.stop()
+
+
+    @requireActiveVoiceChannel
+    async def nextCommand( self, message: discord.Message, *args ):
+        """Stop playing the current audio file and queue the next one (if any), but update the time stamp"""
+        self._currentTrack._playCount -= 1 # dirty
         self._activeVoiceChannel.stop()
 
 
