@@ -1,4 +1,6 @@
 config.json
+track_list.json
+*.log
 data/downloads/*
 
 .vs

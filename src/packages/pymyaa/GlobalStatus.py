@@ -18,7 +18,6 @@ def requiresInitialized( function ):
 
 class GlobalStatus:
 
-
     def __init__( self ):
         self._discordClient = None
         self._guilds        = {}
