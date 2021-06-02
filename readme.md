@@ -28,6 +28,13 @@ Required python packages:
 
 ## Usage
 
+Rename *config.json.stub* to *config.json* and paste the bot's token to the value of "token". An example of what *config.json* should look like:
+```
+{
+    "prefix" : "mya-nee",
+    "token" : "some-hash-gibberish"
+}
+```
 Required discord permissions: ```Send Messages``` ```Connect``` ```Speak```.
 
 After setting up the bot on your discord server (guild), run *src/drivers/mya-nee.py*.
@@ -38,6 +45,6 @@ On linux, you can also run *run.sh* that dumps the log to *mya-nee.log* and deta
 
 ## Details
 
-Most features of ```mya-nee``` are pretty trivial but handling audio needs a few clarifications. When ```mya-nee play some_youtube_video_link``` is executed, the audio is **downloaded and stored** is *data/downloads*. If you're wondering "*OMFG why not just stream the audio instead of downloading it?*", you're absolutely right, but you also clearly have no experience with German ISPs. Also, I'm running ```mya-nee``` from a raspberry whose WiFi receiver is not in top shape, so minimizing unnecessary throughput saves a lot of headaches. Consequently, downloading **new** audio files may interrupt the playback, as ```youtube_dl``` doesn't offer an asynchronous interface, and moving it to a subrocess is a hassle (I might do it in the near future tho). An extreme case of this *feature* is that, if the download takes long enough, ```mya-nee``` times out from discord and gets into a messed-up state. In this case ```mya-nee reboot``` can be used to reset the connection.
+Most features of ```mya-nee``` are pretty trivial but handling audio needs a few clarifications. When ```mya-nee play some_youtube_video_link``` is executed, the audio is **downloaded and stored** in *data/downloads*. If you're wondering "*OMFG why not just stream the audio instead of downloading it?*", you're absolutely right, but you also clearly have no experience with German ISPs. Also, I'm running ```mya-nee``` from a raspberry whose WiFi receiver is not in top shape, so minimizing unnecessary throughput saves a lot of headaches. Consequently, downloading **new** audio files may interrupt the playback, as ```youtube_dl``` doesn't offer an asynchronous interface, and moving it to a subrocess is a hassle (I might do it in the near future tho). An extreme case of this *feature* is that, if the download takes long enough, ```mya-nee``` times out from discord and gets into a messed-up state. In this case ```mya-nee reboot``` can be used to reset the connection.
 
 Some properties of local audio files (both in *data/downloads* and *data/audio*) are stored in json files that are regularly refreshed during execution. Most importantly, these properties include a time stamp that shows when a file was last played. This is used when queueing **random** audio files (either by ```mya-nee play #``` or ```mya-nee radio```): files that were played in the last 24 hours cannot be queued this way (though they can be queued by directly asking for them).
