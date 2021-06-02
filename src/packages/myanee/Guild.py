@@ -295,6 +295,19 @@ class Guild(Loggee):
         await self._eventHooks["shutdown"]()
 
 
+    async def onChannelLeave( self, channel: discord.VoiceChannel, member: discord.Member ):
+        """Leave the voice channel if mya-nee is the last one on it"""
+        self.log( "'{}' left '{}'".format(member.name, channel.name) )
+        if self._activeVoiceChannel != None and self._activeVoiceChannel.id == channel.id:
+            if len(self._activeVoiceChannel.members) == 1:
+                await self._activeVoiceChannel.disconnect()
+                self._activeVoiceChannel = None
+
+
+    async def onChannelJoin( self, channel: discord.VoiceChannel, member: discord.Member ):
+        self.log( "'{}' joined '{}'".format(member.name, channel.name) )
+
+
     def release( self ):
         """In lieu of a destructor"""
         self._downloadList.writeToFile()

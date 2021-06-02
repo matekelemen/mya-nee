@@ -59,3 +59,8 @@ class VoiceChannel(Channel, Loggee):
     @property
     def id( self ):
         return self._channel.id
+
+    
+    @property
+    def members( self ):
+        return self._channel.members

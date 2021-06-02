@@ -62,6 +62,18 @@ class MyaNee( StreamMultiplex, Loggee ):
                 )
 
 
+    @requiresInitialized
+    async def onChannelLeave( self, channel: discord.VoiceChannel, member: discord.Member ):
+        """Called when a user leaves a channel"""
+        await self._guilds[channel.guild.id].onChannelLeave( channel, member )
+
+
+    @requiresInitialized
+    async def onChannelJoin( self, channel: discord.VoiceChannel, member: discord.Member ):
+        """Called when a user leaves a channel"""
+        await self._guilds[channel.guild.id].onChannelJoin( channel, member )
+
+
     def clear( self ):
         self._discordClient = None
         self._prefix        = ""

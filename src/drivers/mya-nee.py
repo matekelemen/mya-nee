@@ -40,6 +40,14 @@ while True:
     async def on_message( message: discord.Message ):
         await root.onMessage( message )
 
+    @discordClient.event
+    async def on_voice_state_update( member: discord.Member, before: discord.VoiceState, after: discord.VoiceState ):
+        if before.channel != None and after.channel == None:
+            await root.onChannelLeave( before.channel, member )
+
+        elif before.channel == None and after.channel != None:
+            await root.onChannelJoin( after.channel, member )
+
     # Run
     root.log( "run" )
     discordClient.run( configuration["token"] )
