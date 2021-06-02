@@ -1,6 +1,7 @@
 config.json
 track_list.json
 *.log
+*.swp
 data/downloads/*
 
 .vs
