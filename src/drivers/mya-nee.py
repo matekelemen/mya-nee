@@ -14,49 +14,42 @@ rootPath    = driverPath.parent.parent.parent   # path to the local mya-nee repo
 modulePath  = rootPath / "src/packages"         # path to directory containing the mya-nee python module
 
 # Import pymyaa
-moduleSpec  = importlib.util.spec_from_file_location( "pymyaa", str(modulePath / "pymyaa/__init__.py") )
-Myaa        = importlib.util.module_from_spec( moduleSpec )
+moduleSpec  = importlib.util.spec_from_file_location( "myanee", str(modulePath / "myanee/__init__.py") )
+myanee      = importlib.util.module_from_spec( moduleSpec )
 
-sys.modules[moduleSpec.name] = Myaa
-moduleSpec.loader.exec_module( Myaa )
+sys.modules[moduleSpec.name] = myanee
+moduleSpec.loader.exec_module( myanee )
+
 
 
 while True:
 
-    # ------------------------------------------------
-    # DISCORD CLIENT SETUP
-    # ------------------------------------------------
-
+    # Discord client setup
+    configuration = {}
+    with open( rootPath / "config.json", 'r' ) as configFile:
+        configuration = json.load( configFile )
 
     discordClient = discord.Client()
-    globalStatus  = Myaa.GlobalStatus.GlobalStatus()
+    root          = myanee.MyaNee.MyaNee()
 
     @discordClient.event
     async def on_ready():
-        await globalStatus.initialize( discordClient )
-
+        await root.initialize( discordClient, configuration["prefix"] )
 
     @discordClient.event
     async def on_message( message: discord.Message ):
-        await globalStatus.guilds[message.guild.id].onMessage( message )
+        await root.onMessage( message )
 
+    # Run
+    root.log( "run" )
+    discordClient.run( configuration["token"] )
+    root.log( "stop" )
 
-    # ------------------------------------------------
-    # RUN DISCORD CLIENT
-    # ------------------------------------------------
+    root.release()
 
-    # Get bot token
-    configuration = {}
-
-    with open( rootPath / "config.json", "r" ) as configFile:
-        configuration = json.load( configFile )
-
-    token         = configuration["token"]
-
-    # Run mya-nee
-    discordClient.run( token )
-    
-    if globalStatus.status == "rebooting":
+    # Decide what to do after stopping
+    if root.status == "rebooting": # restart the event loop and redefine everything
         asyncio.set_event_loop( asyncio.new_event_loop() )
-    else:
+    else: # terminate
+        root.log( "terminate" )
         break
