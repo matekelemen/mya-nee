@@ -7,7 +7,7 @@ Commands:
 - mya-nee **show** *partial_filename*: post a random image/gif whose file name contains *partial filename* from *data/images* to the active text channel
 - mya-nee **connect**: connect to the voice channel of the caller
 - mya-nee **disconnect**: disconnect from the active voice channel (automatically called if mya-nee is the last in the channel)
-- mya-nee **play** *youtube_video_link / partial_file_name / #*: enqueue audio from a youtube link / local audio file either in *data/audio* or *data/downloads* / random local audio file subject to the 24-hour-rule
+- mya-nee **play** *youtube_video_link / partial_file_name / '#'*: enqueue audio from a youtube link / local audio file either in *data/audio* or *data/downloads* / random local audio file subject to the 24-hour-rule
 - mya-nee **skip**: skip the current audio track (its time stamp is not updated)
 - mya-nee **next**: same as skip but the track's time stamp is updated
 - mya-nee **stop**: stop playing audio (disable **radio** and empty the audio queue)
