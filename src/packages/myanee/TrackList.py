@@ -32,6 +32,14 @@ class TrackList(Loggee):
         return self.getTracksByFilter( lambda key, value: query in key )
 
 
+    def getTrackByFilePath( self, path: pathlib.Path ):
+        hits = self.getTracksByFilter( lambda name, track: track.filePath == path )
+        if hits:
+            return hits[0]
+        else:
+            return None
+
+
     def getTrackByURL( self, url: str ):
         def isURLMatch( name: str, track: Track ):
             return track.url == url

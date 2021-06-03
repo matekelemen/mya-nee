@@ -130,8 +130,9 @@ class Guild(Loggee):
             channel = next((c for c in self._voiceChannels if c.id == targetChannel.id), None)
 
             if channel != None:
-                if channel != None and self._activeVoiceChannel != None and channel.id != self._activeVoiceChannel.id:
+                if self._activeVoiceChannel != None:
                     await self._activeVoiceChannel.disconnect()
+                    self._activeVoiceChannel = None
 
                 await channel.connect()
                 self._activeVoiceChannel = channel
@@ -145,9 +146,9 @@ class Guild(Loggee):
     @requireActiveVoiceChannel
     async def disconnectCommand( self, message: discord.Message, *args ):
         """Disconnect from the active voice channel"""
-        if self._activeVoiceChannel != None:
-            await self._activeVoiceChannel.disconnect()
-            self._activeVoiceChannel = None
+        print(self._activeVoiceChannel)
+        await self._activeVoiceChannel.disconnect()
+        self._activeVoiceChannel = None
 
 
     @requireActiveVoiceChannel
@@ -165,11 +166,15 @@ class Guild(Loggee):
 
             elif isURL( arg ): # url -> assume it's a youtube link
                 filePath = self._downloadManager.enqueue( arg )
-                track = Track(
-                    filePath,
-                    Track.formatDateTime(Track.defaultDateTime())
-                )
-                self._downloadList.addTrack( track )
+                track = self._downloadList.getTrackByFilePath( filePath )
+                
+                if track == None:
+                    track = Track(
+                        filePath,
+                        Track.formatDateTime(Track.defaultDateTime()),
+                        url=arg
+                    )
+                    self._downloadList.addTrack( track, existOK=False )
 
             else: # not a url -> play local audio from the audio dir or the track list
                 for trackList in (self._audioList, self._downloadList):
@@ -182,7 +187,7 @@ class Guild(Loggee):
             if track != None:
                 self.enqueueAudio( track )
             else:
-                self.log( "Could not find matching audio for request '{}'".format(arg) )
+                self.error( "Could not find matching audio for request '{}'".format(arg) )
 
 
     @requireActiveVoiceChannel
@@ -297,15 +302,17 @@ class Guild(Loggee):
 
     async def onChannelLeave( self, channel: discord.VoiceChannel, member: discord.Member ):
         """Leave the voice channel if mya-nee is the last one on it"""
-        self.log( "'{}' left '{}'".format(member.name, channel.name) )
-        if self._activeVoiceChannel != None and self._activeVoiceChannel.id == channel.id:
+        voiceChannel = next((c for c in self._voiceChannels if c.id == channel.id), None)
+        self.log( "'{}' left '{}'".format(member.name, voiceChannel.name) )
+        if self._activeVoiceChannel != None and self._activeVoiceChannel.id == voiceChannel.id:
             if len(self._activeVoiceChannel.members) == 1:
                 await self._activeVoiceChannel.disconnect()
                 self._activeVoiceChannel = None
 
 
     async def onChannelJoin( self, channel: discord.VoiceChannel, member: discord.Member ):
-        self.log( "'{}' joined '{}'".format(member.name, channel.name) )
+        voiceChannel = next((c for c in self._voiceChannels if c.id == channel.id), None)
+        self.log( "'{}' joined '{}'".format(member.name, voiceChannel.name) )
 
 
     def release( self ):

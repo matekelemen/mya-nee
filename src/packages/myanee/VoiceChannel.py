@@ -34,6 +34,7 @@ class VoiceChannel(Channel, Loggee):
 
             try:
                 await self._voiceClient.disconnect()
+                self._voiceClient = None
                 self.log( "disconnected" )
             except Exception as exception:
                 self.error( "failed to disconnect\n{}".format(exception) )
@@ -63,4 +64,4 @@ class VoiceChannel(Channel, Loggee):
     
     @property
     def members( self ):
-        return self._channel.members
+        return list(self._channel.voice_states.keys())
