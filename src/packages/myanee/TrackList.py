@@ -80,16 +80,14 @@ class TrackList(Loggee):
                 )
 
 
-    def addTrack( self, track: Track, existOK=False ):
-        name = str(track.filePath.stem)
-        
-        if not name in self._tracks:
-            self._tracks[name] = track
+    def addTrack( self, track: Track, existOK=False ):        
+        if not track.name in self._tracks:
+            self._tracks[track.name] = track
         else:
             if not existOK:
                 self.error( "Attempt to add existing track to list {}".format(track) )
 
-        return name
+        return track.name
 
 
     @staticmethod

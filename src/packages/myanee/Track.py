@@ -26,8 +26,8 @@ class Track:
         return bool( self._url )
 
 
-    def updateLastPlayed( self, date=datetime.datetime.now() ):
-        self._lastPlayed = date
+    def updateLastPlayed( self ):
+        self._lastPlayed = datetime.datetime.now()
         self._playCount += 1
 
 
@@ -64,12 +64,12 @@ class Track:
 
     @property
     def name( self ):
-        return self._filePath.stem
+        return str(self._filePath.stem)
 
 
     @property
     def extension( self ):
-        return self._filePath.suffix
+        return str(self._filePath.suffix)
 
 
     @staticmethod
