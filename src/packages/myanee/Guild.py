@@ -151,9 +151,16 @@ class Guild(Loggee):
         self._activeVoiceChannel = None
 
 
-    @requireActiveVoiceChannel
     async def playCommand( self, message: discord.Message, *args ):
         """Play audio from a youtube url / the audio or downloads directory"""
+        # Connect to voice channel if necessary and possible
+        if self._activeVoiceChannel == None:
+            if message.author.voice.channel != None:
+                await self.connectCommand( message )
+            else:
+                self.error( "No active voice channel!" )
+
+        # Loop through arguments
         for arg in args:
             track = None
 
@@ -221,13 +228,19 @@ class Guild(Loggee):
         self._activeVoiceChannel.stop()
 
 
-    @requireActiveVoiceChannel
     async def radioCommand( self, message: discord.Message, *args ):
         """Play random audio files if the queue is empty, until stopped"""
-        try:
+        # Connect to voice channel if necessary and possible
+        if self._activeVoiceChannel == None:
+            if message.author.voice.channel != None:
+                await self.connectCommand( message )
+            else:
+                self.error( "No active voice channel!" )
+
+        try: # respond
             with open( IMAGE_DIR / "mya-nee_approval.png", "rb" ) as file:
                 await self._activeTextChannel.send( "besto radio", file=discord.File(file) )
-        finally:
+        finally: # enable radio mode and start playing
             self._inRadioMode = True
             self.recurseAudio()
 
