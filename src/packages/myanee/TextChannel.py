@@ -20,4 +20,5 @@ class TextChannel(Channel, StreamWrapper, Loggee):
 
 
     async def send( self, *args, **kwargs ):
-        await self._channel.send( *args, **kwargs )
+        strings = [ "```" + string + "```" for string in args ]
+        await self._channel.send( *strings, **kwargs )

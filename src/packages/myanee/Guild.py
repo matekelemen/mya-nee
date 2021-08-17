@@ -286,17 +286,17 @@ class Guild(Loggee):
         message = ""
 
         if self._currentTrack != None:
-            message += "**playing** '{}'\n".format( self._currentTrack.name )
+            message += "PLAYING '{}'\n".format( self._currentTrack.name )
         else:
-            message += "**no current audio**\n"
+            message += "NO CURRENT AUDIO\n"
 
-        message += "**radio status**: "
+        message += "RADIO STATUS: "
         if self._inRadioMode:
-            message += "on\n"
+            message += "ON\n"
         else:
-            message += "off\n"
+            message += "OFF\n"
 
-        message += "**queue**:\n"
+        message += "QUEUE:\n"
         await self._activeTextChannel.send( message )
 
         for chunk in stringChunks( [ track.name for track in self._audioQueue ] ):
@@ -319,6 +319,7 @@ class Guild(Loggee):
         self.log( "'{}' left '{}'".format(member.name, voiceChannel.name) )
         if self._activeVoiceChannel != None and self._activeVoiceChannel.id == voiceChannel.id:
             if len(self._activeVoiceChannel.members) == 1:
+                self._inRadioMode = False
                 await self._activeVoiceChannel.disconnect()
                 self._activeVoiceChannel = None
 
