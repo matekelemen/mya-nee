@@ -112,7 +112,7 @@ class DownloadManager(Loggee):
         """ASCIIfy a video title"""
         fileName = "".join( [char if ord(char) < 128 else "_" for char in title] )
         fileName = fileName.replace( " ", "_" ).replace( "/", "_" ).replace( ".", "_").lower()
-        fileName = "".join( currentChar for currentChar, nextChar in zip(fileName, fileName[1:]) if not (currentChar=='_' and nextChar=='_') )
+        fileName = "".join( currentChar for currentChar, nextChar in zip(fileName, fileName[1:]+'_') if not (currentChar=='_' and nextChar=='_') )
         return DOWNLOAD_DIR / (fileName + extension)
 
 
