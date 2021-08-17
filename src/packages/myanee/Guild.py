@@ -172,7 +172,7 @@ class Guild(Loggee):
                     self.error( "none of the available tracks satisfy the 24h rule" )
 
             elif isURL( arg ): # url -> assume it's a youtube link
-                filePath = self._downloadManager.enqueue( arg )
+                filePath = await self._downloadManager.enqueue( arg )
                 track = self._downloadList.getTrackByFilePath( filePath )
                 
                 if track == None:

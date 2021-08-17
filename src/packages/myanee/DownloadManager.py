@@ -3,6 +3,8 @@ import youtube_dl
 
 # --- STL Imports ---
 import pathlib
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 # --- Internal Imports ---
 from .utilities import YOUTUBE_DL_OPTIONS, DOWNLOAD_DIR, isURL
@@ -22,23 +24,23 @@ class DownloadManager(Loggee):
         DOWNLOAD_DIR.mkdir( parents=True, exist_ok=True )
 
 
-    def enqueue( self, url: str ):
+    async def enqueue( self, url: str ):
         """Queue youtube url to be processed and return the file path it will be downloaded to"""
         if not self.isEnqueued( url ):
             self._queue.append( url )
 
         if not self._current:
-            self.recurse()
+            await self.recurse()
 
         return self.urlToFilePath( url )
 
 
-    def recurse( self ):
+    async def recurse( self ):
         """Process youtube urls in the queue until empty"""
         if self._queue:
             url = self._queue.pop( 0 )
-            self.download( url )
-            self.recurse()
+            await self.download( url )
+            await self.recurse()
 
 
     def isEnqueued( self, url: str ):
@@ -51,7 +53,7 @@ class DownloadManager(Loggee):
         return self.urlToFilePath( url ).is_file()
 
 
-    def download( self, url: str ):
+    async def download( self, url: str ):
         try:
             self._current = url
             filePath = self.urlToFilePath( url )
@@ -62,7 +64,14 @@ class DownloadManager(Loggee):
             try:
                 with youtube_dl.YoutubeDL( settings ) as youtube:
                     self.log( "Downloading {} to {}".format(url, filePath) )
-                    youtube.extract_info( url, download=True )
+
+                    with ThreadPoolExecutor() as pool:
+                        loop = asyncio.get_running_loop()
+                        await loop.run_in_executor(
+                            pool,
+                            lambda: youtube.extract_info( url, download=True )
+                        )
+
                     self.log( "Finished downloading {} to {}".format(url, filePath) )
 
             except Exception as exception:
