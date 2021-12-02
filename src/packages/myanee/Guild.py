@@ -54,7 +54,7 @@ class Guild(Loggee):
 
         self._currentTrack      = None
         self._audioQueue        = []
-        self._audioRule         = datetime.timedelta( days=1 )
+        self._audioRule         = datetime.timedelta( days=2 )
         self._inRadioMode       = False
 
         self._activeTextChannel  = None
@@ -248,22 +248,26 @@ class Guild(Loggee):
     @requireActiveTextChannel
     async def listCommand( self, message: discord.Message, *args ):
         """List the contents of the data directory (arguments in unix path style)"""
-        for arg in args:
+        if args:
+            target = args[0]
+            if len(args) < 1:
+                args.append("*")
 
             items = []
 
-            if arg == "commands":
+            if target == "commands":
                 items = [ "**{}**:\t{}".format(name, command.__doc__) for name, command in self._commands.items() ]
 
-            elif arg == "queue":
+            elif target == "queue":
                 items = self._audioQueue
 
             else:
-                directory = (DATA_DIR / arg).resolve()
+                directory = (DATA_DIR / target).resolve()
 
                 if directory.is_dir():
                     if SOURCE_DIR in directory.parents:
-                        items = [ path.stem for path in directory.glob("*") ]
+                        for searchTerm in args[1:]:
+                            items += [path.stem for path in directory.glob(searchTerm)]
                     else:
                         with open( IMAGE_DIR / "hackerman.gif", "rb" ) as file:
                             await self._activeTextChannel.send(
