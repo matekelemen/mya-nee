@@ -1,5 +1,5 @@
 # --- External Imports ---
-import youtube_dl
+import yt_dlp as youtube_dl
 
 # --- STL Imports ---
 import pathlib
