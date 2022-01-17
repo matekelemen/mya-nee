@@ -53,7 +53,8 @@ def download(url: str, directory=myanee.utilities.DOWNLOAD_DIR):
 
 class TikTokFilter(MessageFilter):
     def filter(self, message):
-        return message.text and "tiktok" in message.text
+        url = extractURL(message.text)
+        return url and "vm.tiktok.com" in url
 
 
 def onTikTokMessage(update: Update, context: CallbackContext):
