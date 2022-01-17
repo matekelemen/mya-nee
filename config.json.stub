@@ -1,4 +1,5 @@
 {
     "prefix" : "mya-nee",
-    "token" : ""
+    "token" : "",
+    "telegramToken" : ""
 }

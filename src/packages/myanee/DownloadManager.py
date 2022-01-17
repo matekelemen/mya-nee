@@ -24,39 +24,42 @@ class DownloadManager(Loggee):
         DOWNLOAD_DIR.mkdir( parents=True, exist_ok=True )
 
 
-    async def enqueue( self, url: str ):
+    async def enqueue( self, url: str, filePath="", settings={} ):
         """Queue youtube url to be processed and return the file path it will be downloaded to"""
+        filePath = pathlib.Path(filePath)
+        if filePath == pathlib.Path(""):
+            filePath = self.urlToFilePath( url )
+
         if not self.isEnqueued( url ):
-            self._queue.append( url )
+            self._queue.append( (url, filePath) )
 
         if not self._current:
             await self.recurse()
 
-        return self.urlToFilePath( url )
+        return filePath
 
 
     async def recurse( self ):
         """Process youtube urls in the queue until empty"""
         if self._queue:
-            url = self._queue.pop( 0 )
-            await self.download( url )
+            url, filePath = self._queue.pop( 0 )
+            await self.download( url, filePath )
             await self.recurse()
 
 
     def isEnqueued( self, url: str ):
         """Checks whether the specified youtube url is to be downloaded"""
-        return url in self._queue
+        return next((True for item in self._queue if item[0]==url), False)
 
 
     def isDownloaded( self, url: str ):
-        """Checks whether the specified youtube url was precessed already"""
+        """Checks whether the specified youtube url was already processed"""
         return self.urlToFilePath( url ).is_file()
 
 
-    async def download( self, url: str ):
+    async def download( self, url: str, filePath: pathlib.Path ):
         try:
             self._current = url
-            filePath = self.urlToFilePath( url )
 
             settings = YOUTUBE_DL_OPTIONS
             settings["outtmpl"] = str( filePath )
