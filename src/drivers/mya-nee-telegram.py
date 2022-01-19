@@ -4,6 +4,8 @@ import pathlib
 import sys
 import re
 import tempfile
+import functools
+import json
 
 # --- Internal Imports ---
 driverPath  = pathlib.Path(__file__).absolute() # full path to this file
@@ -51,35 +53,86 @@ def download(url: str, directory=myanee.utilities.DOWNLOAD_DIR):
     return directory / f"{output['id']}.mp4"
 
 
+def loggedCallback(function):
+    @functools.wraps(function)
+    def wrapped(update: Update, context: CallbackContext):
+        print(f"[MessageCallback] {update.message}")
+        return function(update, context)
+    return wrapped
+
+
 class TikTokFilter(MessageFilter):
     def filter(self, message):
-        url = extractURL(message.text)
-        return url and "vm.tiktok.com" in url
+        if message.text:
+            url = extractURL(message.text)
+            return url and "vm.tiktok.com" in url
+
+    @staticmethod
+    @loggedCallback
+    def callback(update: Update, context: CallbackContext):
+        if update.message.text:
+            url = extractURL(update.message.text)
+            with tempfile.TemporaryDirectory() as directory:
+                filePath = download(url, directory=pathlib.Path(directory))
+                with open(filePath, 'rb') as file:
+                    context.bot.send_video(
+                        chat_id=update.effective_chat.id,
+                        reply_to_message_id=update.message.message_id,
+                        video=file
+                    )
 
 
-def onTikTokMessage(update: Update, context: CallbackContext):
-    if update.message.text:
-        url = extractURL(update.message.text)
-        with tempfile.TemporaryDirectory() as directory:
-            filePath = download(url, directory=pathlib.Path(directory))
-            with open(filePath, 'rb') as file:
-                context.bot.send_video(
+class DigitFilter(MessageFilter):
+    _map = {
+        '0' : myanee.utilities.IMAGE_DIR / "hachikuji_0.webp",
+        '1' : myanee.utilities.IMAGE_DIR / "plastic_neesan.webp",
+        '2' : myanee.utilities.IMAGE_DIR / "klee.webp"
+    }
+
+    def filter(self, message):
+        if message.text:
+            text = message.text.strip()
+            return len(text)==1 and 47 < ord(text) and ord(text) < 58
+
+    @staticmethod
+    @loggedCallback
+    def callback(update: Update, context: CallbackContext):
+        digit = update.message.text.strip()
+        if digit in DigitFilter._map:
+            with open(DigitFilter._map[digit], 'rb') as file:
+                context.bot.send_sticker(
                     chat_id=update.effective_chat.id,
                     reply_to_message_id=update.message.message_id,
-                    video=file
+                    sticker=file
                 )
+
+
+class DirectFilter(MessageFilter):
+    _prefix = json.loads((myanee.utilities.SOURCE_DIR / "config.json").read_text())["prefix"]
+
+    def filter(self, message):
+        if message.text:
+            return message.text.startswith(self._prefix)
+
+    @staticmethod
+    @loggedCallback
+    def callback(update: Update, context: CallbackContext):
+        # TODO
+        pass
 
 
 if __name__ == "__main__":
     # Get the telegram bot token
-    import json
     with open(rootPath / "config.json", 'r') as configFile:
         token = json.load(configFile)["telegramToken"]
 
+    # Create loop handler and register callbacks
     updater = Updater(token=token, use_context=True)
-    updater.dispatcher.add_handler(
-        MessageHandler(TikTokFilter(), onTikTokMessage)
-    )
 
+    for observer in (TikTokFilter, DigitFilter, DirectFilter):
+        updater.dispatcher.add_handler(
+            MessageHandler(observer(), observer.callback)
+        )
+
+    # Begin callback loop
     updater.start_polling()
-    #https://vm.tiktok.com/ZMLJPCvmE/
