@@ -20,6 +20,8 @@ myanee = importlib.util.module_from_spec(MyaNeeModuleSpec)
 sys.modules[MyaNeeModuleSpec.name] = myanee
 MyaNeeModuleSpec.loader.exec_module(myanee)
 
+from myanee.utilities import IMAGE_DIR
+
 # --- External Imports ---
 from yt_dlp import YoutubeDL
 from telegram import Update
@@ -61,11 +63,11 @@ def loggedCallback(function):
     return wrapped
 
 
-class TikTokFilter(MessageFilter):
+class VideoFilter(MessageFilter):
     def filter(self, message):
         if message.text:
             url = extractURL(message.text)
-            return url and "vm.tiktok.com" in url
+            return url and "vm.tiktok.com" in url or "reddit.com" in url
 
     @staticmethod
     @loggedCallback
@@ -82,24 +84,28 @@ class TikTokFilter(MessageFilter):
                     )
 
 
-class DigitFilter(MessageFilter):
+class IntegerFilter(MessageFilter):
     _map = {
-        '0' : myanee.utilities.IMAGE_DIR / "hachikuji_0.webp",
-        '1' : myanee.utilities.IMAGE_DIR / "plastic_neesan.webp",
-        '2' : myanee.utilities.IMAGE_DIR / "klee.webp"
+        '0' : IMAGE_DIR / "hachikuji_0.webp",
+        '1' : IMAGE_DIR / "plastic_neesan.webp",
+        '2' : IMAGE_DIR / "klee.webp",
+        '3' : IMAGE_DIR / "3.webp",
+        '4' : IMAGE_DIR / "4.webp",
+        '5' : IMAGE_DIR / "5.webp",
+        '6' : IMAGE_DIR / "keqing_6.webp",
+        '10' : IMAGE_DIR / "10.webp"
     }
 
     def filter(self, message):
         if message.text:
-            text = message.text.strip()
-            return len(text)==1 and 47 < ord(text) and ord(text) < 58
+            return message.text.strip() in self._map
 
     @staticmethod
     @loggedCallback
     def callback(update: Update, context: CallbackContext):
         digit = update.message.text.strip()
-        if digit in DigitFilter._map:
-            with open(DigitFilter._map[digit], 'rb') as file:
+        if digit in IntegerFilter._map:
+            with open(IntegerFilter._map[digit], 'rb') as file:
                 context.bot.send_sticker(
                     chat_id=update.effective_chat.id,
                     reply_to_message_id=update.message.message_id,
@@ -129,7 +135,7 @@ if __name__ == "__main__":
     # Create loop handler and register callbacks
     updater = Updater(token=token, use_context=True)
 
-    for observer in (TikTokFilter, DigitFilter, DirectFilter):
+    for observer in (VideoFilter, IntegerFilter, DirectFilter):
         updater.dispatcher.add_handler(
             MessageHandler(observer(), observer.callback)
         )
