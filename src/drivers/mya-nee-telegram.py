@@ -63,7 +63,7 @@ def loggedCallback(function):
     return wrapped
 
 
-class VideoFilter(MessageFilter):
+class URLFilter(MessageFilter):
     def filter(self, message):
         if message.text:
             url = extractURL(message.text)
@@ -84,8 +84,8 @@ class VideoFilter(MessageFilter):
                     )
 
 
-class IntegerFilter(MessageFilter):
-    _map = {
+class KeywordFilter(MessageFilter):
+    _imageMap = {
         '0' : IMAGE_DIR / "hachikuji_0.webp",
         '1' : IMAGE_DIR / "plastic_neesan.webp",
         '2' : IMAGE_DIR / "klee.webp",
@@ -93,24 +93,36 @@ class IntegerFilter(MessageFilter):
         '4' : IMAGE_DIR / "4.webp",
         '5' : IMAGE_DIR / "5.webp",
         '6' : IMAGE_DIR / "keqing_6.webp",
-        '10' : IMAGE_DIR / "10.webp"
+        "10" : IMAGE_DIR / "10.webp",
+        "C++" : IMAGE_DIR / "cpp.webp"
+    }
+
+    _stringMap = {
+        "kaka" : "https://www.reddit.com/r/Shinobu/"
     }
 
     def filter(self, message):
         if message.text:
-            return message.text.strip() in self._map
+            text = message.text.strip()
+            return text in self._imageMap or text in self._stringMap
 
     @staticmethod
     @loggedCallback
     def callback(update: Update, context: CallbackContext):
-        digit = update.message.text.strip()
-        if digit in IntegerFilter._map:
-            with open(IntegerFilter._map[digit], 'rb') as file:
+        keyword = update.message.text.strip()
+        if keyword in KeywordFilter._imageMap:
+            with open(KeywordFilter._imageMap[keyword], 'rb') as file:
                 context.bot.send_sticker(
                     chat_id=update.effective_chat.id,
                     reply_to_message_id=update.message.message_id,
                     sticker=file
                 )
+        elif keyword in KeywordFilter._stringMap:
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                reply_to_message_id=update.message.message_id,
+                text=KeywordFilter._stringMap[keyword]
+            )
 
 
 class DirectFilter(MessageFilter):
@@ -135,7 +147,7 @@ if __name__ == "__main__":
     # Create loop handler and register callbacks
     updater = Updater(token=token, use_context=True)
 
-    for observer in (VideoFilter, IntegerFilter, DirectFilter):
+    for observer in (URLFilter, KeywordFilter, DirectFilter):
         updater.dispatcher.add_handler(
             MessageHandler(observer(), observer.callback)
         )
