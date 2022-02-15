@@ -13,7 +13,7 @@ from .TextChannel import TextChannel
 from .VoiceChannel import VoiceChannel
 from .stream import Stream
 from .Loggee import Loggee
-from .utilities import isURL, randomItem, stringChunks, AUDIO_DIR, IMAGE_DIR, DOWNLOAD_DIR, DATA_DIR, SOURCE_DIR
+from .utilities import URLUtilities, randomItem, stringChunks, AUDIO_DIR, IMAGE_DIR, DOWNLOAD_DIR, DATA_DIR, SOURCE_DIR
 
 
 def requireActiveTextChannel( function: callable ):
@@ -171,10 +171,10 @@ class Guild(Loggee):
                     await self._activeTextChannel.send( "mya-nee ran out of things to play >.<'" )
                     self.error( "none of the available tracks satisfy the 24h rule" )
 
-            elif isURL( arg ): # url -> assume it's a youtube link
+            elif URLUtilities.isURL( arg ): # url -> assume it's a youtube link
                 filePath = await self._downloadManager.enqueue( arg )
                 track = self._downloadList.getTrackByFilePath( filePath )
-                
+
                 if track == None:
                     track = Track(
                         filePath,
