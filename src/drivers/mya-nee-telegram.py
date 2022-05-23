@@ -8,6 +8,11 @@ import json
 import argparse
 import os
 import traceback
+import requests
+import random
+import re
+import typing
+import abc
 
 # --- Internal Imports ---
 driverPath  = pathlib.Path(__file__).absolute() # full path to this file
@@ -108,7 +113,6 @@ ffmpegParser.add_argument("-to", type=str)
 ffmpegParser.add_argument("-c", type=str, default = "copy")
 ffmpegParser.add_argument("-i", type=str, default="")
 
-
 class DirectFilter(MessageFilter):
     _prefix = json.loads((myanee.utilities.SOURCE_DIR / "config.json").read_text())["prefix"]
 
@@ -176,27 +180,117 @@ class URLFilter(MessageFilter):
                     )
 
 
-class KeywordFilter(MessageFilter):
-    _imageMap = {
-        '0' : IMAGE_DIR / "hachikuji_0.webp",
-        '1' : IMAGE_DIR / "plastic_neesan.webp",
-        '2' : IMAGE_DIR / "klee.webp",
-        '3' : IMAGE_DIR / "3.webp",
-        '4' : IMAGE_DIR / "4.webp",
-        '5' : IMAGE_DIR / "5.webp",
-        '6' : IMAGE_DIR / "keqing_6.webp",
-        "10" : IMAGE_DIR / "10.webp",
-        "C++" : IMAGE_DIR / "cpp.webp"
-    }
+class RegexMap:
+    """@brief Container associating values to regexes.
 
-    _stringMap = {
-        "kaka" : "https://www.reddit.com/r/Shinobu/"
-    }
+    @details Item access is provided through strings that are checked against the stored regexes.
+             Since neither the patterns nor the values need to be unique, an input string key may
+             match multiple regexes. All stored patterns are tested in insertion order and each
+             hit's regex and value is appended to the output list.
+    """
+
+    def __init__(self, initMap: list[tuple[re.Pattern, typing.Any]]):
+        """@brief Construct a @ref RegexMap [from a list of pattern-value pairs]."""
+        self.__container = initMap
+
+    def emplace(self, pattern: re.Pattern, value: typing.Any) -> None:
+        """@brief Insert a pattern-value pair into the map.
+        @details May raise a @c KeyError is the pattern is identical to an already stored one."""
+        if any(pattern == pair[0] for pair in self.__container):
+            raise KeyError(f"'{pattern}' is already part of the map")
+        self.__container.append((pattern, value))
+
+    def erase(self, key: str) -> None:
+        """"@brief Remove all entries that match the provided key."""
+        self.__container = [(pattern, value) for pattern, value in self.__container if not pattern.search(key)]
+
+    def __getitem__(self, key: str) -> list[tuple[re.Pattern,typing.Any]]:
+        """@brief Collect all patterns that match the input key, along with their associated values."""
+        return [(pattern, value) for pattern, value in self.__container if pattern.search(key)]
+
+    def __contains__(self, key: str) -> bool:
+        """@brief True if any of the stored patterns matches the provided key."""
+        return any(True for pattern, value in self.__container if pattern.search(key))
+
+
+class TelegramCallback(abc.ABC):
+    """@brief Interface for implementing telegram callbacks."""
+
+    @abc.abstractmethod
+    def __call__(self, update: Update, context: CallbackContext) -> None:
+        pass
+
+
+class ConstMessageCallback(TelegramCallback):
+    """@brief Always send the same text message in response to the one that triggered this."""
+
+    def __init__(self, message: str):
+        self.__message = message
+
+    def __call__(self, update: Update, context: CallbackContext) -> None:
+        context.bot.send_message(chat_id = update.effective_chat.id,
+                                 reply_to_message_id = update.message.message_id,
+                                 text = self.__message)
+
+
+class ConstStickerCallback(TelegramCallback):
+    """@brief Always send the same sticker in response to the one that triggered this."""
+
+    def __init__(self, stickerPath: pathlib.Path):
+        if not stickerPath.is_file():
+            raise FileNotFoundError(f"'{stickerPath}' not found")
+        self.__path = stickerPath
+
+    def __call__(self, update: Update, context: CallbackContext):
+        with open(self.__path, 'rb') as file:
+            context.bot.send_sticker(chat_id = update.effective_chat.id,
+                                     reply_to_message_id = update.message.message_id,
+                                     sticker = file)
+
+
+class ExcuseFetchCallback(TelegramCallback):
+    """@brief Fetch a random line from a list aggregated from the specified URLs."""
+
+    _pattern = re.compile(R"#[kK][iI][fF][oO][gG][aá][sS]((?:0$|(?:[1-9]+[0-9]*)))?")
+
+    def __init__(self, urls: list[str]):
+        self.__sources = urls.copy()
+
+    def __call__(self, update: Update, context: CallbackContext) -> None:
+        # Collect and flatten all non-empty lines from all registered URLs
+        lines = sum((sum(([line.strip()] for line in requests.get(url).text.split("\n") if line.strip()), []) for url in self.__sources), [])
+        if not lines:
+            raise RuntimeError(f"No lines could be fetched from {self.__sources}")
+
+        # Get the requested line or pick a random one
+        match = ExcuseFetchCallback._pattern.search(update.message.text).group(1)
+        line = lines[int(match) % len(lines)] if match else random.choice(lines)
+
+        # Send message
+        context.bot.send_message(chat_id = update.effective_chat.id,
+                                 reply_to_message_id = update.message.message_id,
+                                 text = line)
+
+
+class RegexFilter(MessageFilter):
+    _callbackMap: "RegexMap[re.Pattern, TelegramCallback]" = RegexMap([
+        (re.compile(R"[kK][aA][kK][aA]"), ConstMessageCallback("https://www.reddit.com/r/Shinobu/")), # URL for position-independent case-insensitive "kaka"
+        (re.compile(R"^0$"),      ConstStickerCallback(IMAGE_DIR / "hachikuji_0.webp")),              # Sticker for exact "0"
+        (re.compile(R"^1$"),      ConstStickerCallback(IMAGE_DIR / "plastic_neesan.webp")),           # Sticker for exact "1"
+        (re.compile(R"^2$"),      ConstStickerCallback(IMAGE_DIR / "klee.webp")),                     # Sticker for exact "2"
+        (re.compile(R"^3$"),      ConstStickerCallback(IMAGE_DIR / "3.webp")),                        # Sticker for exact "3"
+        (re.compile(R"^4$"),      ConstStickerCallback(IMAGE_DIR / "4.webp")),                        # Sticker for exact "4"
+        (re.compile(R"^5$"),      ConstStickerCallback(IMAGE_DIR / "5.webp")),                        # Sticker for exact "5"
+        (re.compile(R"^6$"),      ConstStickerCallback(IMAGE_DIR / "keqing_6.webp")),                 # Sticker for exact "6"
+        (re.compile(R"^10$"),     ConstStickerCallback(IMAGE_DIR / "10.webp")),                       # Sticker for exact "10"
+        (re.compile(R"[cC]\+\+"), ConstStickerCallback(IMAGE_DIR / "cpp.webp")),                      # Sticker for location-independent case-insensitive C++
+        (ExcuseFetchCallback._pattern, ExcuseFetchCallback(["https://raw.githubusercontent.com/matekelemen/kifogasok/main/kifogasok.txt"]))
+    ])
 
     @staticmethod
     def match(string: str) -> bool:
-        string = string.strip()
-        return string in KeywordFilter._imageMap or string in KeywordFilter._stringMap
+        """@brief Defer membership test to @ref RegexMap."""
+        return string in RegexFilter._callbackMap
 
     def filter(self, message) -> bool:
         if message.text:
@@ -206,21 +300,10 @@ class KeywordFilter(MessageFilter):
 
     @staticmethod
     @loggedCallback
-    def callback(update: Update, context: CallbackContext):
-        keyword = update.message.text.strip()
-        if keyword in KeywordFilter._imageMap:
-            with open(KeywordFilter._imageMap[keyword], 'rb') as file:
-                context.bot.send_sticker(
-                    chat_id=update.effective_chat.id,
-                    reply_to_message_id=update.message.message_id,
-                    sticker=file
-                )
-        elif keyword in KeywordFilter._stringMap:
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                reply_to_message_id=update.message.message_id,
-                text=KeywordFilter._stringMap[keyword]
-            )
+    def callback(update: Update, context: CallbackContext) -> None:
+        """@brief Collect all stored callbacks matching the message and invoke each of them."""
+        for pattern, callback in RegexFilter._callbackMap[update.message.text]:
+            callback(update, context)
 
 
 if __name__ == "__main__":
@@ -231,10 +314,8 @@ if __name__ == "__main__":
     # Create loop handler and register callbacks
     updater = Updater(token=token, use_context=True)
 
-    for observer in (URLFilter, KeywordFilter, DirectFilter):
-        updater.dispatcher.add_handler(
-            MessageHandler(observer(), observer.callback)
-        )
+    for observer in (URLFilter, DirectFilter, RegexFilter):
+        updater.dispatcher.add_handler(MessageHandler(observer(), observer.callback))
 
     # Begin callback loop
     updater.start_polling()
