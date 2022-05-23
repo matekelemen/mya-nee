@@ -222,7 +222,7 @@ class TelegramCallback(abc.ABC):
 
 
 class ConstMessageCallback(TelegramCallback):
-    """@brief Always send the same text message in response to the one that triggered this."""
+    """@brief Always send the same text message in response to the message that triggered this."""
 
     def __init__(self, message: str):
         self.__message = message
@@ -234,7 +234,7 @@ class ConstMessageCallback(TelegramCallback):
 
 
 class ConstStickerCallback(TelegramCallback):
-    """@brief Always send the same sticker in response to the one that triggered this."""
+    """@brief Always send the same sticker in response to the message that triggered this."""
 
     def __init__(self, stickerPath: pathlib.Path):
         if not stickerPath.is_file():
